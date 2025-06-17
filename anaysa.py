@@ -1,475 +1,225 @@
-from flask import Flask, request, render_template_string, jsonify
-
-import requests
-
-import os
-
-import re
-
-import time
-
-import threading
+from flask import Flask, render_template_string
 
 app = Flask(__name__)
 
-app.secret_key = 'your_secret_key_here'  # Change this to a random secret key
-
- 
-
-# Login credentials
-
-OWNER_USERNAME = "SEERATBRAND09"
-
-ADMIN_PASSWORD = "TRICKERSEERAT"
-
-class FacebookCommenter:
-
-    def __init__(self):
-
-        self.comment_count = 0
-
-    def comment_on_post(self, cookies, post_id, comment, delay):
-
-        with requests.Session() as r:
-
-            r.headers.update({
-
-                'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,/;q=0.8,application/signed-exchange;v=b3;q=0.7',
-
-                'sec-fetch-site': 'none',
-
-                'accept-language': 'id,en;q=0.9',
-
-                'Host': 'mbasic.facebook.com',
-
-                'sec-fetch-user': '?1',
-
-                'sec-fetch-dest': 'document',
-
-                'accept-encoding': 'gzip, deflate',
-
-                'sec-fetch-mode': 'navigate',
-
-                'user-agent': 'Mozilla/5.0 (Linux; Android 13; SM-G960U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.5790.166 Mobile Safari/537.36',
-
-                'connection': 'keep-alive',
-
-            })
-
-            response = r.get(f'https://mbasic.facebook.com/{post_id}', cookies={"cookie": cookies})
-
-            next_action_match = re.search('method="post" action="([^"]+)"', response.text)
-
-            fb_dtsg_match = re.search('name="fb_dtsg" value="([^"]+)"', response.text)
-
-            jazoest_match = re.search('name="jazoest" value="([^"]+)"', response.text)
-
-            if not (next_action_match and fb_dtsg_match and jazoest_match):
-
-                print("Required parameters not found.")
-
-                return
-
-            next_action = next_action_match.group(1).replace('amp;', '')
-
-            fb_dtsg = fb_dtsg_match.group(1)
-
-            jazoest = jazoest_match.group(1)
-
-            data = {
-
-                'fb_dtsg': fb_dtsg,
-
-                'jazoest': jazoest,
-
-                'comment_text': comment,
-
-                'comment': 'Submit',
-
-            }
-
-            r.headers.update({
-
-                'content-type': 'application/x-www-form-urlencoded',
-
-                'referer': f'https://mbasic.facebook.com/{post_id}',
-
-                'origin': 'https://mbasic.facebook.com',
-
-            })
-
-            response2 = r.post(f'https://mbasic.facebook.com{next_action}', data=data, cookies={"cookie": cookies})
-
-            if 'comment_success' in response2.url and response2.status_code == 200:
-
-                self.comment_count += 1
-
-                print(f"Comment {self.comment_count} successfully posted.")
-
-            else:
-
-                print(f"Comment failed with status code: {response2.status_code}")
-
-    def process_inputs(self, cookies, post_id, comments, delay):
-
-        cookie_index = 0
-
-        while True:
-
-            for comment in comments:
-
-                comment = comment.strip()
-
-                if comment:
-
-                    time.sleep(delay)
-
-                    self.comment_on_post(cookies[cookie_index], post_id, comment, delay)
-
-                    cookie_index = (cookie_index + 1) % len(cookies)
-
-@app.route("/", methods=["GET", "POST"])
-
-def index():
-
-    if request.method == "POST":
-
-        post_id = request.form['post_id']
-
-        delay = int(request.form['delay'])
-
-        cookies_file = request.files['cookies_file']
-
-        comments_file = request.files['comments_file']
-
-        cookies = cookies_file.read().decode('utf-8').splitlines()
-
-        comments = comments_file.read().decode('utf-8').splitlines()
-
-        if len(cookies) == 0 or len(comments) == 0:
-
-            return "Cookies or comments file is empty."
-
-        commenter = FacebookCommenter()
-
-        commenter.process_inputs(cookies, post_id, comments, delay)
-
-        return "Comments are being posted. Check console for updates."
-
-    
-
-    form_html = '''
-
-    <!DOCTYPE html>
-
+@app.route('/')
+def home():
+    return render_template_string("""
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>POST</title>
-
+    <title>S33R9T BR9ND SYSTEM</title>
     <style>
-
-        body {
-
-            font-family: 'Poppins', sans-serif;
-
-            background: #FFF9C4;
-
-            color: #333;
-
-            display: flex;
-
-            flex-direction: column;
-
-            min-height: 100vh;
-
-            overflow-y: auto;
-
-            align-items: center;
-
-        }
-
-        .container {
-
-            background: rgba(255, 255, 255, 0.9);
-
-            padding: 30px;
-
-            border-radius: 15px;
-
-            box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.1);
-
-            max-width: 400px;
-
-            width: 90%;
-
-            margin-top: 20px;
-
-        }
-
-        h1 {
-
-            font-weight: 600;
-
-            color: #FF9800;
-
-            text-align: center;
-
-        }
-
-        input, button {
-
-            width: 100%;
-
-            padding: 12px;
-
-            margin: 10px 0;
-
-            border-radius: 10px;
-
-            border: none;
-
-            font-size: 16px;
-
-        }
-
-        input {
-
-            background: #FFF3E0;
-
-            color: #333;
-
-            outline: none;
-
-        }
-
-        input::placeholder {
-
-            color: #666;
-
-        }
-
-        button {
-
-            background: #FF9800;
-
-            color: white;
-
-            font-weight: 600;
-
-            cursor: pointer;
-
-            transition: background 0.3s;
-
-        }
-
-        button:hover {
-
-            background: #F57C00;
-
-        }
-
-        .info-btn {
-
-            position: fixed;
-
-            top: 15px;
-
-            right: 15px;
-
-            background: #FF9800;
-
-            border-radius: 50%;
-
-            width: 40px;
-
-            height: 40px;
-
-            display: flex;
-
-            justify-content: center;
-
-            align-items: center;
-
-            color: white;
-
-            cursor: pointer;
-
-            transition: transform 0.3s;
-
-        }
-
-        .info-btn:hover {
-
-            transform: scale(1.2);
-
-        }
-
-        .overlay {
-
-            position: fixed;
-
-            top: 0;
-
-            left: 0;
-
-            width: 100%;
-
+        /* Basic Styling */
+        body, html {
+            margin: 0;
+            padding: 0;
             height: 100%;
-
-            background: rgba(0, 0, 0, 0.6);
-
+            font-family: Arial, sans-serif;
             display: flex;
-
             justify-content: center;
-
             align-items: center;
-
-            visibility: hidden;
-
-            opacity: 0;
-
-            transition: opacity 0.3s ease-in-out;
-
+            color: white;
+            text-align: center;
         }
 
-        .overlay.active {
-
-            visibility: visible;
-
-            opacity: 1;
-
+        /* Animation Container */
+        #animation-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: white;
+            animation: fadeIn 2s ease-in-out forwards;
+            height: 100vh;
+            width: 100vw;
+            background: black;
+            justify-content: center;
         }
 
-        .owner-info {
+        /* Animation Effect */
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: scale(0.5); }
+            100% { opacity: 1; transform: scale(1); }
+        }
 
-            background: white;
+        /* Hiding Animation after Display */
+        #login-page, #options-page, #password-prompt {
+            display: none;
+        }
 
+        /* Login Page Styling */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: url('https://raw.githubusercontent.com/FaiziXd/Faizu-Apk/refs/heads/main/9c00c9c67343002135c21fbce5c7c3f5.jpg') no-repeat center center fixed;
+            background-size: cover;
+        }
+
+        .login-box {
+            background: rgba(0, 0, 0, 0.8);
             padding: 20px;
-
             border-radius: 10px;
-
-            text-align: center;
-
-            width: 350px;
-
-            box-shadow: 0px 5px 20px rgba(0, 0, 0, 0.2);
-
+            box-shadow: 0px 0px 10px rgba(255, 0, 0, 0.5);
         }
 
-        .owner-info img {
-
-            width: 80px;
-
-            height: 80px;
-
-            border-radius: 50%;
-
-            margin-bottom: 10px;
-
-        }
-
-        .footer {
-
-            margin-top: 20px;
-
-            font-size: 14px;
-
-            text-align: center;
-
+        .login-box input {
             padding: 10px;
-
+            font-size: 18px;
+            border-radius: 5px;
+            border: none;
+            margin-bottom: 10px;
+            outline: none;
+            width: 80%;
+            text-align: center;
         }
 
-        .footer a {
-
-            color: #FF9800;
-
-            text-decoration: none;
-
-            font-weight: bold;
-
+        .login-box button {
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: red;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
         }
 
-        .cursor {
-
-            position: fixed;
-
-            width: 12px;
-
-            height: 12px;
-
-            border-radius: 50%;
-
-            background: red;
-
-            pointer-events: none;
-
-            transition: background 0.2s, transform 0.1s ease-out;
-
+        /* Options Page Styling */
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: url('https://raw.githubusercontent.com/FaiziXd/Faizu-Apk/refs/heads/main/b4b9a65dc7d586f35b690186e2e16a3e.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: white;
+            text-align: center;
         }
 
-        .spacer {
-
-            flex-grow: 1;
-
+        .option-button {
+            padding: 15px 30px;
+            margin: 10px;
+            font-size: 24px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border: 2px solid red;
+            border-radius: 10px;
+            cursor: pointer;
+            animation: fadeInOptions 1.5s ease-in-out;
+            transition: transform 0.2s;
         }
 
+        .option-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0px 0px 10px rgba(255, 0, 0, 0.5);
+        }
+
+        /* Password Prompt Styling */
+        .password-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: url('https://raw.githubusercontent.com/FaiziXd/Faizu-Apk/refs/heads/main/b1ccc829fab0b847dab271d53123f67f.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: white;
+            text-align: center;
+        }
+
+        .password-box {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(255, 0, 0, 0.5);
+        }
+
+        /* Animation for Options */
+        @keyframes fadeInOptions {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
     </style>
-
 </head>
-
 <body>
 
-    <div class="container">
-
-        <h1>POST SERVER</h1>
-
-     <div class="status"></div>
-
-    <form method="POST" enctype="multipart/form-data">
-
-        P0ST UID: <input type="text" name="post_id"><br><br>
-
-        TIME.TXT: <input type="number" name="delay"><br><br>
-
-        COOKIES: <input type="file" name="cookies_file"><br><br>
-
-        FILE TXT: <input type="file" name="comments_file"><br><br>
-
-        <button type="submit">START Comments</button>
-
-        </form>
-
-        
-
-        
-
-        <div class="footer">
-
-            <a href="https://www.facebook.com/share/1Bf4NBZ4Qs/?mibextid=ZbWKwL">Contact me on Facebook</a>
-
-        </div>
-
+    <!-- Animation Container -->
+    <div id="animation-container">
+        <h1 style="font-size: 3rem; animation: glow 1s infinite alternate;">The Faizu Apk</h1>
     </div>
 
+    <!-- Login Page -->
+    <div id="login-page" class="login-container">
+        <div class="login-box">
+            <h2>Login</h2>
+            <input type="text" id="username" placeholder="Enter Username"><br>
+            <input type="password" id="password" placeholder="Enter Password"><br>
+            <button onclick="showOptions()">Login</button>
+        </div>
+    </div>
+
+    <!-- Options Page -->
+    <div id="options-page" class="options-container">
+        <h1 style="margin-bottom: 20px;"> Seerat Apk</h1>
+        <div class="option-button" onclick="showPasswordPrompt('https://faizuxd.onrender.com/')">Multy Single</div>
+        <div class="option-button" onclick="showPasswordPrompt('https://the-faizu-brand.onrender.com')">Multy Single 2</div>
+        <div class="option-button" onclick="window.location.href='https://youtube.com/@faiizuxd?si=ytoo0Gfpmmusgx6y'">YouTube ðŸ’™</div>
+    </div>
+
+    <!-- Password Prompt -->
+    <div id="password-prompt" class="password-container">
+        <div class="password-box">
+            <h2>Enter Password To Access Faizu Apk</h2>
+            <input type="password" id="passwordInput" placeholder="Enter Password"><br>
+            <button onclick="checkPassword()">Submit</button>
+            <button onclick="contactSupport()">Contact</button>
+        </div>
+    </div>
+
+    <script>
+        let selectedLink = '';
+
+        // Animation Timeout to Show Login Page
+        setTimeout(() => {
+            document.getElementById('animation-container').style.display = 'none';
+            document.getElementById('login-page').style.display = 'flex';
+        }, 3000); // Show login page after 3 seconds
+
+        // Show Options Page after Login
+        function showOptions() {
+            document.getElementById('login-page').style.display = 'none';
+            document.getElementById('options-page').style.display = 'flex';
+        }
+
+        // Show Password Prompt for certain options
+        function showPasswordPrompt(link) {
+            selectedLink = link;
+            document.getElementById('options-page').style.display = 'none';
+            document.getElementById('password-prompt').style.display = 'flex';
+        }
+
+        // Check Password and Redirect
+        function checkPassword() {
+            const password = document.getElementById('passwordInput').value;
+            if (password === 'SEERAT BRAND H3R3') {
+                window.location.href = selectedLink;
+            } else {
+                alert('Incorrect password! Please try again or contact support.');
+            }
+        }
+
+        // Contact Support
+        function contactSupport() {
+            window.location.href = 'https://www.facebook.com/The.drugs.ft.chadwick.67';
+        }
+    </script>
+
 </body>
-
 </html>
+""")
 
-    '''
-
-    
-
-    return render_template_string(form_html)
-
-if __name__ == '__main__':
-
-    port = int(os.environ.get('PORT', 20343))
-
-    app.run(host='0.0.0.0', port=port, debug=True) 
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
