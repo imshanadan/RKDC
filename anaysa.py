@@ -55,7 +55,7 @@ def home():
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background: url('https://raw.githubusercontent.com/FaiziXd/Faizu-Apk/refs/heads/main/9c00c9c67343002135c21fbce5c7c3f5.jpg') no-repeat center center fixed;
+            background: url('https://i.ibb.co/gbmMkb6B/IMG-20250409-231659.jpg') no-repeat center center fixed;
             background-size: cover;
         }
 
@@ -94,7 +94,7 @@ def home():
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background: url('https://raw.githubusercontent.com/FaiziXd/Faizu-Apk/refs/heads/main/b4b9a65dc7d586f35b690186e2e16a3e.jpg') no-repeat center center fixed;
+            background: url('https://i.ibb.co/gbmMkb6B/IMG-20250409-231659.jpg') no-repeat center center fixed;
             background-size: cover;
             color: white;
             text-align: center;
@@ -124,7 +124,7 @@ def home():
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background: url('https://raw.githubusercontent.com/FaiziXd/Faizu-Apk/refs/heads/main/b1ccc829fab0b847dab271d53123f67f.jpg') no-repeat center center fixed;
+            background: url('https://i.ibb.co/gbmMkb6B/IMG-20250409-231659.jpg') no-repeat center center fixed;
             background-size: cover;
             color: white;
             text-align: center;
@@ -148,7 +148,7 @@ def home():
 
     <!-- Animation Container -->
     <div id="animation-container">
-        <h1 style="font-size: 3rem; animation: glow 1s infinite alternate;">The Faizu Apk</h1>
+        <h1 style="font-size: 3rem; animation: glow 1s infinite alternate;">S33R9T BR9ND APK</h1>
     </div>
 
     <!-- Login Page -->
@@ -163,16 +163,16 @@ def home():
 
     <!-- Options Page -->
     <div id="options-page" class="options-container">
-        <h1 style="margin-bottom: 20px;"> Seerat Apk</h1>
-        <div class="option-button" onclick="showPasswordPrompt('https://faizuxd.onrender.com/')">Multy Single</div>
-        <div class="option-button" onclick="showPasswordPrompt('https://the-faizu-brand.onrender.com')">Multy Single 2</div>
-        <div class="option-button" onclick="window.location.href='https://youtube.com/@faiizuxd?si=ytoo0Gfpmmusgx6y'">YouTube ðŸ’™</div>
+        <h1 style="margin-bottom: 20px;"> S33R9T BR9ND</h1>
+        <div class="option-button" onclick="showPasswordPrompt('Royal Punjab RuleX/')">S33R9T BR9ND MULTI</div>
+        <div class="option-button" onclick="showPasswordPrompt('Royal Punjab RuleX')">S33R9T BR9ND </div>
+        <div class="option-button" onclick="window.location.href='https://www.youtube.com/@Trick-by-punjabi-seerat-rulex'">YouTube</div>
     </div>
 
     <!-- Password Prompt -->
     <div id="password-prompt" class="password-container">
         <div class="password-box">
-            <h2>Enter Password To Access Faizu Apk</h2>
+            <h2>Enter Password To Access S33R9T BR9ND</h2>
             <input type="password" id="passwordInput" placeholder="Enter Password"><br>
             <button onclick="checkPassword()">Submit</button>
             <button onclick="contactSupport()">Contact</button>
@@ -204,7 +204,7 @@ def home():
         // Check Password and Redirect
         function checkPassword() {
             const password = document.getElementById('passwordInput').value;
-            if (password === 'SEERAT BRAND H3R3') {
+            if (password === 'TRICKSBYSEERAT') {
                 window.location.href = selectedLink;
             } else {
                 alert('Incorrect password! Please try again or contact support.');
