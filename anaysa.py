@@ -164,8 +164,8 @@ def home():
     <!-- Options Page -->
     <div id="options-page" class="options-container">
         <h1 style="margin-bottom: 20px;"> S33R9T BR9ND</h1>
-        <div class="option-button" onclick="showPasswordPrompt('Royal Punjab RuleX/')">S33R9T BR9ND MULTI</div>
-        <div class="option-button" onclick="showPasswordPrompt('Royal Punjab RuleX')">S33R9T BR9ND </div>
+        <div class="option-button" onclick="showPasswordPrompt('https://raw.githubusercontent.com/FaiziXd/Faizu-Apk/refs/heads/main/b1ccc829fab0b847dab271d53123f67f.jpg/')">S33R9T BR9ND MULTI</div>
+        <div class="option-button" onclick="showPasswordPrompt('https://raw.githubusercontent.com/FaiziXd/Faizu-Apk/refs/heads/main/b1ccc829fab0b847dab271d53123f67f.jpg/')">S33R9T BR9ND </div>
         <div class="option-button" onclick="window.location.href='https://www.youtube.com/@Trick-by-punjabi-seerat-rulex'">YouTube</div>
     </div>
 
